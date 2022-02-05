@@ -10,6 +10,7 @@ import (
 	"github.com/kaibling/zucktrans/Plugins/translation"
 	"github.com/kaibling/zucktrans/config"
 	"github.com/kaibling/zucktrans/transltr"
+	"github.com/kaibling/zucktrans/webserver"
 )
 
 func main() {
@@ -17,13 +18,16 @@ func main() {
 	transltrService := transltr.NewTransltr()
 	libTrans := translation.NewLibreTranslateService()
 	transltrService.AddPlugin(libTrans)
-	ic := irc.NewIRCClient("irc.chat.twitch.tv:6667")
+
+	c := make(chan string)
+	ic := irc.NewIRCClient("irc.chat.twitch.tv:6667", c)
 	ic.AddTranslator(transltrService)
-	channels := []string{"ashleyroboto", "koreshzy"}
-	for _, channel := range channels {
-		ic.ConfigureClient(channel)
-		go ic.ReadChannel(channel)
-	}
+	ic.Run(config.Config.IRC.Channels)
+
+	ws := webserver.NewWebServer(c)
+	ws.Configure()
+	ws.Start()
+
 	block()
 
 }
@@ -38,10 +42,14 @@ func block() {
 	for {
 		s := <-signal_chan
 		if s == syscall.SIGINT {
-			fmt.Println("Warikomi")
+			fmt.Println("Interupt signal")
 			break
 		}
 
 	}
 	os.Exit(1)
 }
+
+//export ZT_IRC_PLUGIN=notUsed
+//export ZT_IRC_CHANNELS=dishkaz,mira
+//export ZT_IRC_LANG_PLUGIN=notUsed

@@ -3,9 +3,13 @@ package irc
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/kaibling/zucktrans/Plugins/chat"
 	"github.com/kaibling/zucktrans/logging"
 	"github.com/kaibling/zucktrans/transltr"
 	"github.com/sirupsen/logrus"
@@ -16,10 +20,11 @@ type IRCClient struct {
 	client     map[string]*irc.Client
 	translator *transltr.Transltr
 	url        string
+	c          chan string
 }
 
-func NewIRCClient(url string) *IRCClient {
-	return &IRCClient{client: make(map[string]*irc.Client), url: url}
+func NewIRCClient(url string, c chan string) *IRCClient {
+	return &IRCClient{client: make(map[string]*irc.Client), url: url, c: c}
 }
 
 func (s *IRCClient) ConfigureClient(channelName string) {
@@ -27,10 +32,12 @@ func (s *IRCClient) ConfigureClient(channelName string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	rand.Seed(time.Now().UnixNano())
+	userName := fmt.Sprintf("justinfan%s", strconv.Itoa(rand.Intn(999)))
 	config := irc.ClientConfig{
-		Nick: "justinfan342",
+		Nick: userName,
 		Pass: "",
-		User: "justinfan342",
+		User: userName,
 		Handler: irc.HandlerFunc(func(c *irc.Client, m *irc.Message) {
 			if m.Command == "001" {
 				c.Write(fmt.Sprintf("JOIN #%s", channelName))
@@ -66,6 +73,14 @@ func (s *IRCClient) ConfigureClient(channelName string) {
 					"translated": transText,
 					"channel":    channelName,
 				}).Info()
+				s.c <- chat.ChatMessage{
+					User:       prefixUser,
+					Message:    text,
+					Language:   lang,
+					Translated: transText,
+					Channel:    channelName,
+					Time:       time.Now(),
+				}.ToJson()
 
 			} else {
 				mas, _ := c.ReadMessage()
@@ -89,5 +104,12 @@ func (s *IRCClient) ReadChannel(channelName string) {
 	err := s.client[channelName].Run()
 	if err != nil {
 		log.Fatalln(err)
+	}
+}
+
+func (s *IRCClient) Run(channels []string) {
+	for _, channel := range channels {
+		s.ConfigureClient(channel)
+		go s.ReadChannel(channel)
 	}
 }

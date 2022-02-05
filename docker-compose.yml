@@ -7,10 +7,14 @@ services:
    volumes:
     - "./:/work"
    working_dir: "/work"
+   ports:
+   - 8567:8080
    environment:
      - UID=1000
      - GID=1000
      - POS_TOKEN_SECRECT=adjkewrew23aewdfpooe23
+     - ZT_IRC_LANG_PLUGIN=notUsed
+     - ZT_IRC_PLUGIN=notUsed
    restart: always
    links:
      - transltr:transltr
@@ -19,6 +23,5 @@ services:
    image: libretranslate/libretranslate
    restart: always
    volumes:
-     #- "./translate_models:/root/.local/share/argos-translate"
      - "./translate_models:/root/.local/share/LibreTranslate"
      

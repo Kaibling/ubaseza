@@ -1,0 +1,80 @@
+<html>
+  <div>
+    <h1>Zuck Ubazeza</h1>
+    <p>Translates things</p>
+    <input id="input" type="text" size="40" />
+    <button onclick="send()">Send</button>
+    <pre id="output"></pre>
+    <table id="messagetable" Border="1">
+        <thead>
+        <tr>
+            <td>Time</td>
+            <td>Channel</td>
+            <td>User</td>
+            <td>Language</td>
+            <td>Message</td>
+            <td>Original</td>
+        </tr>
+    </thead>
+    <tbody id="aaa">
+
+    </tbody>
+    </table>
+  </div>
+  <style>
+    html {
+      text-align: center;
+      font-size: 16px;
+    }
+    div {
+      padding: 1rem;
+    }
+    #input {
+      font-size: 16px;
+    }
+    p {
+        font-size: 16px;
+    }
+  </style>
+  <script>
+    var input = document.getElementById("input");
+    var output = document.getElementById("output");
+    var messagetablebody = document.getElementById("aaa");
+    var socket = new WebSocket("ws://fallnet.ch:8567/wsa");
+
+    socket.onopen = function () {
+      output.innerHTML += "Status: Connected\n";
+    };
+
+    socket.onmessage = function (e) {
+    const chatMessage = JSON.parse(e.data);
+      let row = document.createElement('tr')
+      let user  = document.createElement('td')
+      user.innerHTML = chatMessage.User
+
+      let language  = document.createElement('td')
+      language.innerHTML = chatMessage.Language
+
+      let message  = document.createElement('td')
+      message.innerHTML = chatMessage.Translated
+
+      let time  = document.createElement('td')
+      time.innerHTML = chatMessage.Time
+
+      let original  = document.createElement('td')
+      original.innerHTML = chatMessage.Message
+
+      let channel  = document.createElement('td')
+      channel.innerHTML = chatMessage.Channel
+     
+      row.append(time,channel,user,language,message,original)
+      messagetablebody.append(row)
+
+    };
+
+    function send() {
+      socket.send(input.value);
+      input.value = "";
+    }
+  </script>
+</html>
